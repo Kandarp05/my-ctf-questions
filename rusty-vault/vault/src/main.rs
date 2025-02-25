@@ -1,5 +1,7 @@
 use std::{io::{self, Write}, process::exit};
-const PROC: &[u8] = &[0x98, 0x89, 0x96, 0x96, 0x8B, 0x8F, 0x9A, 0x8D, 0x9F, 0x82, 0x91, 0x9C, 0x95, 0x95, 0x95, 0x96, 0xA6, 0x90, 0x8D, 0x8A, 0xA6, 0x94, 0x9C, 0xA6, 0x93, 0x98, 0x94, 0x9C, 0x8A, 0x84, 0xF9];
+use sha2::{Sha256, Digest};
+use hex_literal::hex;
+use openssl::symm::{decrypt, Cipher};
 
 fn check_stage_1(password: &str, is_stage_1: bool) -> bool{
     let mut is_stage_1 = is_stage_1;
@@ -35,10 +37,6 @@ fn check_stage_2(password: &str, is_stage_1: bool) -> bool{
     is_stage_1
 }
 
-fn decrypt_xor(data: &[u8], key: u8) -> Vec<u8> {
-    data.iter().map(|&byte| byte ^ key).collect()
-}
-
 fn main() {
     println!("Welcome to the Vault!");
     println!("Enter the secret password: ");
@@ -51,41 +49,53 @@ fn main() {
 
     let password = password.trim();
 
-    // let mut is_stage_1 = false;
+    let mut is_stage_1 = false;
 
-    // let len = password.len();
-    // if len <= 16 {
-    //     println!("Stage 1 failed!!");
-    //     exit(0);
-    // }
+    let len = password.len();
+    if len <= 16 {
+        println!("Stage 1 failed!!");
+        exit(0);
+    }
 
-    // is_stage_1 = check_stage_1(&password, is_stage_1);
-    // if !is_stage_1 {
-    //     println!("Stage 1 failed!!");
-    //     exit(0);
-    // }
+    is_stage_1 = check_stage_1(&password, is_stage_1);
+    if !is_stage_1 {
+        println!("Stage 1 failed!!");
+        exit(0);
+    }
 
-    // let mut is_stage_2 = false;
-    // if len > 16 {
-    //     println!("Stage 2 failed!!");
-    //     exit(0);
-    // }
+    let mut is_stage_2 = false;
+    if len > 16 {
+        println!("Stage 2 failed!!");
+        exit(0);
+    }
 
-    // is_stage_2 = check_stage_2(&password, is_stage_2);
-    // if !is_stage_2 {
-    //     println!("Stage 2 failed!!");
-    //     exit(0);
-    // }
+    is_stage_2 = check_stage_2(&password, is_stage_2);
+    if !is_stage_2 {
+        println!("Stage 2 failed!!");
+        exit(0);
+    }
 
-    if password == "hello" {
-        println!("Vault open! Here is your treasure");
-        // Decrypt the bytes first using XOR with 0xF9
-        let decrypted = decrypt_xor(&PROC[..PROC.len()-1], 0xF9);
-        match std::str::from_utf8(&decrypted) {
-            Ok(flag_str) => println!("Flag: {}", flag_str),
-            Err(_) => println!("Failed to convert flag bytes to string"),
-        }
+    let mut hasher = Sha256::new();
+    hasher.update(password.as_bytes());
+    let hash = hasher.finalize();
+
+    let expected_hash = hex!("926fdd45c2c66b215015e3e2496af99bd0d311359757258e70443f8d98bd348e");
+
+    if hash.as_slice() == expected_hash {
+        let key = hex!("926fdd45c2c66b215015e3e2496af99b");
+        let iv = hex!("e62ce43b30939c8041c898b783731957");
+        let ciphertext = hex!("d34516e68ad78f29792f5ac31ea5858dae598e368d17d0fa5a81ee6e61115a83");
+
+        let cipher = Cipher::aes_128_cbc();
+
+        let decrypted_data = decrypt(cipher, &key, Some(&iv), &ciphertext)
+            .expect("msg");
+
+        let flag = String::from_utf8(decrypted_data).unwrap();
+        println!("Stage 3 passed!!");
+        println!("The flag is: {}", flag);
+    } else {
+        println!("Stage 3 failed!!");
+        exit(0);
     }
 }
-
- 98 89 96 96 8b 8f 9a 8d 9f 82 91 9c 95 95 95 96 a6 90 8d 8a a6 94 9c a6 93 98 94 9c 8a 84 f9
