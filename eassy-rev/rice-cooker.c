@@ -55,6 +55,6 @@ int main() {
     reverse(password);
     transform(password);
 
-    printf(strcmp(password, expected) == 0 ? "Correct!\n" : "Incorrect!\n");
+    printf(strcmp(password, expected) == 0 ? "enjoy the rice… next time, it won’t be this easy. 🌾😈\n" : "no rice for you bro 🍚❌\n");
     return 0;
 }
