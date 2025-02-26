@@ -4,6 +4,7 @@ A criminal mastermind named larry stole Chef Tataka ultimate ramen recipe and ye
 - Author: hampter/kandarp
 - flag: apoorvctf{w0rst_r4m3n_3v3r_ong}
 - files: recipe.zip
+- Category: Forensics
 
 ## Writeup
 
