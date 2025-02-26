@@ -1,7 +1,7 @@
 ## Description
 A criminal mastermind named larry stole Chef Tataka ultimate ramen recipe and yeeted it into a password-protected zip file. Inside? A sacred text file with the secret to flavor nirvana. Crack the zip, save the slurp. No pressure. 🍜💀
 
-- Author: hampter/kandarp
+- Author: hampter
 - flag: apoorvctf{w0rst_r4m3n_3v3r_ong}
 - files: recipe.zip
 - Category: Forensics
@@ -63,7 +63,7 @@ You may resume the attack with the option: --continue-attack 297837
 7cfefd6a 4aedd214 970c7187
 ```
 
-Horray! We got the internal keys `7cfefd6a 4aedd214 970c7187`
+Hurray! We got the internal keys `7cfefd6a 4aedd214 970c7187`
 
 Now we use `bkcrack -C recipe.zip -k 7cfefd6a 4aedd214 970c7187 -D unprotected.zip` (this will make a clone of original zip without password)
 
