@@ -1,61 +1,49 @@
 ## Description
 A criminal mastermind named larry stole Chef Tataka ultimate ramen recipe and yeeted it into a password-protected zip file. Inside? A sacred text file with the secret to flavor nirvana. Crack the zip, save the slurp. No pressure. 🍜💀
 
-- Author: hampter/kandarp
+- Author: hampter
 - flag: apoorvctf{w0rst_r4m3n_3v3r_ong}
+- files: recipe.zip
+- Category: Forensics
 
 ## Writeup
+Here we have a zip file, when we try to unzip it `unzip recipe.zip` it asks for a password.
 
-So we got a zip file, when you try to extract the zip, it asks for a password.
+So we either need to find the password or bypass it somehow.
 
-Next thing to think about is how to recover this password.
-
-Execute `7z l recipe.zip` 
+First thing i ran `unzip -l recipe.zip` 
 ```
-7-Zip 24.09 (x64) : Copyright (c) 1999-2024 Igor Pavlov : 2024-11-29
- 64-bit locale=C.UTF-8 Threads:12 OPEN_MAX:1024, ASM
-
-Scanning the drive for archives:
-1 file, 90008 bytes (88 KiB)
-
-Listing archive: recipe.zip
-
---
-Path = recipe.zip
-Type = zip
-Physical Size = 90008
-
-   Date      Time    Attr         Size   Compressed  Name
-------------------- ----- ------------ ------------  ------------------------
-2025-02-24 18:37:30 .....        89796        89808  secret_recipe.png
-------------------- ----- ------------ ------------  ------------------------
-2025-02-24 18:37:30              89796        89808  1 files
+Archive:  recipe.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+    89796  2025-02-24 18:37   secret_recipe.png
+---------                     -------
+    89796                     1 file
 ```
+So the zip only contains one png file named `secret_recipe.png`
 
-Hence there is a secret_recipe.png in out zip file.
-
-Now i started looking for some vulnerability in protected zip.
+Next thing i started researching about some kind of vulnerability in protected zip files. 
 
 I found an article mentioning about some known plainext attack in **PKZIP stream cipher**
+[https://link.springer.com/chapter/10.1007/978-3-642-31912-9_16](https://link.springer.com/chapter/10.1007/978-3-642-31912-9_16)
 
-But for this attack to work we need to knwo some plaintext in the given zip.
+Found a tool to exploit this vulnerability on github called [bkcrack](https://github.com/kimci86/bkcrack)
 
-**What is one thing present in all png??** -> Magic String of PNG
+But in order for this attack to work we need to know some plaintext that exists in our zip file.
 
-We know every png starts with 
+Now we know the file inside is a PNG and what plaintext is present in all PNG's - `The magic string`
+
+We know every png starts with `89 50 4E 47 0D 0A 1A 0A` but this attack requires at least 13 bytes to be effective so i also added the IHDR chunk as all PNG's must have a ihdr chunk hence we know `89 50 4E 47 0D 0A 1A 0A 00 00 00 0D 49 48 44 52` exists in our file.
+
+So our plaintext is 
 ```
 �PNG
 
 IHDR
 ```
+save this as `png.bin`
 
-or `89 50 4E 47 0D 0A 1A 0A 00 00 00 0D 49 48 44 52` in hex
-
-lets try using this as our plaintext.
-
-I found a tool called [bkcrack](https://github.com/kimci86/bkcrack)
-
-i used the cmd `bkcrack -C recipe.zip -c secret_recipe.png -p png.bin`
+run `bkcrack -C recipe.zip -c secret_recipe.png -p png.bin`
 
 - recipe.zip is the zip file
 - secret_recipe.png is the cipher text(Since we know plaintext from png)
@@ -75,9 +63,9 @@ You may resume the attack with the option: --continue-attack 297837
 7cfefd6a 4aedd214 970c7187
 ```
 
-Horray! We got the internal keys `7cfefd6a 4aedd214 970c7187`
+Hurray! We got the internal keys `7cfefd6a 4aedd214 970c7187`
 
 Now we use `bkcrack -C recipe.zip -k 7cfefd6a 4aedd214 970c7187 -D unprotected.zip` (this will make a clone of original zip without password)
 
 Now unzip the new zip `unzip unprotected.zip`
-Open secret_recipe.png in any image_viewer to get the flag.
+Open secret_recipe.png in any image viewer to get the flag.
